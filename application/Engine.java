@@ -1,43 +1,45 @@
 package application;
 
-import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Stack;
+
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.Gson;
+
 import javafx.scene.Node;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.shape.Rectangle;
 
+
 /*
 	Engine of the project. 
-	Class used to move pieces, reset the board, roll back last move until the start of the game, save/load the game and select the configurations
+	Class used to move pieces, reset the board, roll back last move until the start of the game, save/load the game and select a configuration
 */
 
 public class Engine {
 	
 	private boolean legal;
-    private StringBuilder moveLog;
     
-    public Engine(boolean legal, StringBuilder moveLog) {
+    public Engine(boolean legal) {
         this.legal = legal;
-        this.moveLog = moveLog;
     }
     
     public boolean isLegal() {
         return legal;
     }
 
-    public StringBuilder getMoveLog() {
-        return moveLog;
-    }
 	
-    public static Engine movePiece(KeyEvent event, Rectangle selectedPiece, GridPane board, Map<Rectangle, Integer[]> initialPositions, boolean legal, Stack<MoveInfo> moveHistory, int moves, StringBuilder moveLog) {
+    public static Engine movePiece(KeyEvent event, Rectangle selectedPiece, GridPane board, Map<Rectangle, Integer[]> initialPositions, boolean legal, Stack<MoveInfo> moveHistory, int moves) {
     	KeyCode keyCode = event.getCode();
     	if (selectedPiece == null) {
-	    	return new Engine(false, moveLog);
+	    	return new Engine(false);
 	    }
         int rowChange = 0;
         int columnChange = 0;
@@ -56,7 +58,7 @@ public class Engine {
                 columnChange = 1;
                 break;
             default:
-                return new Engine(false, moveLog); // Return a default value for unknown key events
+                return new Engine(false); // Return a default value for unknown key events
         }
 	    int oldRowIndex = GridPane.getRowIndex(selectedPiece);
 	    int oldColumnIndex = GridPane.getColumnIndex(selectedPiece);
@@ -70,28 +72,26 @@ public class Engine {
 	    boolean newPositionLegal = false;
 	    
 	   int type=4;
-	   String ID="Small";
 	   if((selectedPiece.getWidth()==200) && (selectedPiece.getHeight()==100)) {
 		   type=1;
-		   ID="Horizontal medium";
 	   }else if((selectedPiece.getWidth()==100) && (selectedPiece.getHeight()==200)) {
 		   type=2;
-		   ID="Vertical medium";
+
 	   }else if ((selectedPiece.getWidth()==200) && (selectedPiece.getHeight()==200)) {
 		   type=3;
-		   ID="Goal";
+
 	   }else {
 		   type=4;
-		   ID="Small";
+
 	   }
 	   
 	    // Check if the new position is within grid limits for the selected piece
-	    if (Checks.isMoveWithinBounds(newRow, newColumn, type)) {
+	    if (Support.isMoveWithinBounds(newRow, newColumn, type)) {
 	        // Check if the new position is not occupied by another piece
-	        Node occupant = Checks.getNodeAtPosition(board, newRow, newColumn);
+	        Node occupant = Support.getNodeAtPosition(board, newRow, newColumn);
 	        if (occupant == null) {
 	            // Check for overlap with other pieces
-	            boolean overlap = Checks.checkForOverlap(selectedPiece, newRow, newColumn, initialPositions);
+	            boolean overlap = Support.checkForOverlap(selectedPiece, newRow, newColumn, initialPositions);
 	            
 	            if (!overlap) {
 	                GridPane.setRowIndex(selectedPiece, newRow);
@@ -106,15 +106,11 @@ public class Engine {
 	        MoveInfo moveInfo = new MoveInfo(selectedPiece, oldRowIndex, oldColumnIndex);
 	        moveHistory.push(moveInfo);
 	    	
-	        // Append move information to the log
-	        String Info = String.format("Move %d: %s piece at (%d, %d) moved to (%d, %d)%n", moves, ID, rowIndex, columnIndex, newRow, newColumn);
-	        moveLog.append(Info);
-
 	        // Update UI
 	        legal = newPositionLegal;
-	        return new Engine(legal,moveLog);
+	        return new Engine(legal);
 	    }
-	    return new Engine(false, moveLog); // Return a default value if the move is not legal
+	    return new Engine(false); // Return a default value if the move is not legal
 	}
     
     public static void reset (Map<Rectangle, Integer[]> initialPositions) {
@@ -127,7 +123,7 @@ public class Engine {
 	    }
 	}
     
-	public static void undo(Stack<MoveInfo> moveHistory,  StringBuilder moveLog) {
+	public static void undo(Stack<MoveInfo> moveHistory) {
 	    if (!moveHistory.isEmpty()) {
 	        MoveInfo lastMove = moveHistory.pop();
 	        Rectangle piece = lastMove.piece;
@@ -136,24 +132,137 @@ public class Engine {
 
 	        GridPane.setRowIndex(piece, oldRow);
 	        GridPane.setColumnIndex(piece, oldColumn);
-	        int lastIndex = moveLog.lastIndexOf("Move");
-	        if (lastIndex >= 0) {
-	            moveLog.setLength(lastIndex);
-	        }
 	    }
 	}
     
-	public static void save(StringBuilder moveLog) {
+	public static void save(GridPane board, Map<Rectangle, Integer[]> initialPositions, int numberOfMoves) {
 	    try {
-	        File logFile = new File("move_log.txt");
-	        FileWriter writer = new FileWriter(logFile);
-	        writer.write(moveLog.toString());
+	        JsonObject jsonObject = new JsonObject();
+	        jsonObject.addProperty("numberOfMoves", numberOfMoves);
+
+	        JsonObject initialPositionsObject = new JsonObject();
+	        for (Map.Entry<Rectangle, Integer[]> entry : initialPositions.entrySet()) {
+	            Rectangle piece = entry.getKey();
+	            Integer[] position = entry.getValue();
+
+	            JsonObject pieceInfo = new JsonObject();
+	            pieceInfo.addProperty("y", position[0]);
+	            pieceInfo.addProperty("x", position[1]);
+	            initialPositionsObject.add(piece.getId(), pieceInfo);
+	        }
+
+	        jsonObject.add("initialPositions", initialPositionsObject);
+
+	        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+	        // Define the file name and extension
+	        String fileName = "board_state.json";
+
+	        FileWriter writer = new FileWriter(fileName);
+	        gson.toJson(jsonObject, writer);
 	        writer.close();
-	        System.out.println("Move log saved to 'move_log.txt'");
-	    } catch (IOException ex) {
-	        System.err.println("Error saving move log: " + ex.getMessage());
+	    } catch (IOException e) {
+	        e.printStackTrace();
 	    }
-		System.out.println("SAVE");
+	}
+
+	
+	public static int load(String jsonFilePath, GridPane board, Map<Rectangle, Integer[]> initialPositions ) {
+		int numberOfMoves = 0; // Initialize with a default value
+		try {
+	        Gson gson = new Gson();
+	        FileReader reader = new FileReader(jsonFilePath);
+	        JsonObject jsonObject = gson.fromJson(reader, JsonObject.class);
+	        JsonElement numberOfMovesElement = jsonObject.get("numberOfMoves");
+	        if (numberOfMovesElement != null) {
+	            numberOfMoves = numberOfMovesElement.getAsInt();
+	        }
+	        
+	        for (Map.Entry<String, JsonElement> entry : jsonObject.getAsJsonObject("initialPositions").entrySet()) {
+	            String pieceId = entry.getKey();
+	            JsonObject pieceInfo = entry.getValue().getAsJsonObject();
+	            Rectangle piece = null;
+	            for (Map.Entry<Rectangle, Integer[]> positionEntry : initialPositions.entrySet()) {
+	                if (positionEntry.getKey().getId().equals(pieceId)) {
+	                    piece = positionEntry.getKey();
+	                    break;
+	                }
+	            }
+
+	            if (piece != null) {
+	                int newRow, newColumn;
+
+	                JsonElement rowElement = pieceInfo.get("row");
+	                JsonElement columnElement = pieceInfo.get("column");
+
+	                if (rowElement != null && columnElement != null) {
+	                    newRow = rowElement.getAsInt();
+	                    newColumn = columnElement.getAsInt();
+	                } else {
+	                    newRow = pieceInfo.get("y").getAsInt();
+	                    newColumn = pieceInfo.get("x").getAsInt();
+	                }
+
+	                // Update the position of the piece on the board
+	                GridPane.setRowIndex(piece, newRow);
+	                GridPane.setColumnIndex(piece, newColumn);
+	                
+	                // Update the initialPositions map
+	                initialPositions.put(piece, new Integer[]{newRow, newColumn});
+	            }
+	        }
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	    }
+		return numberOfMoves;
+	}
+
+
+	
+	
+	public static void loadConfiguration(String jsonFilePath, GridPane board, Map<Rectangle, Integer[]> initialPositions) {
+	    try {
+	        Gson gson = new Gson();
+	        FileReader reader = new FileReader(jsonFilePath);
+	        JsonObject jsonObject = gson.fromJson(reader, JsonObject.class);
+
+	        for (Map.Entry<String, JsonElement> entry : jsonObject.getAsJsonObject("initialPositions").entrySet()) {
+	            String pieceId = entry.getKey();
+	            JsonObject pieceInfo = entry.getValue().getAsJsonObject();
+
+	            Rectangle piece = null;
+	            for (Map.Entry<Rectangle, Integer[]> positionEntry : initialPositions.entrySet()) {
+	                if (positionEntry.getKey().getId().equals(pieceId)) {
+	                    piece = positionEntry.getKey();
+	                    break;
+	                }
+	            }
+
+	            if (piece != null) {
+	                int newRow, newColumn;
+
+	                JsonElement rowElement = pieceInfo.get("row");
+	                JsonElement columnElement = pieceInfo.get("column");
+
+	                if (rowElement != null && columnElement != null) {
+	                    newRow = rowElement.getAsInt();
+	                    newColumn = columnElement.getAsInt();
+	                } else {
+	                    newRow = pieceInfo.get("y").getAsInt();
+	                    newColumn = pieceInfo.get("x").getAsInt();
+	                }
+
+	                // Update the position of the piece on the board
+	                GridPane.setRowIndex(piece, newRow);
+	                GridPane.setColumnIndex(piece, newColumn);
+	                
+	                // Update the initialPositions map
+	                initialPositions.put(piece, new Integer[]{newRow, newColumn});
+	            }
+	        }
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	    }
 	}
 	
 }

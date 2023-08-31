@@ -27,17 +27,18 @@ public class Controller implements Initializable {
 	
 	private int moves=0;
 	private boolean legal;
-	private StringBuilder moveLog = new StringBuilder();
-	
+	private String configFile="C:\\Programmazione\\eclipse\\KlotskiTest\\KlotskiTest\\src\\application\\config.json";
+	private String saveFile="C:\\Programmazione\\eclipse\\KlotskiTest\\KlotskiTest\\board_state.json";
     @FXML
     private AnchorPane anchorPane;
     
     @FXML
     private GridPane board;
-
+    
     private Stage stage;
     
     private Map<Rectangle, Integer[]> initialPositions = new HashMap<>(); // Map to store initial positions
+    private Map<Rectangle, Integer[]> currentPositions = new HashMap<>(); //Map to store current positions of every piece in order to be able to save/load the board
     private Stack<MoveInfo> moveHistory = new Stack<>(); //Stack to store moves history
     private Engine result;
 
@@ -73,11 +74,14 @@ public class Controller implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         anchorPane.addEventHandler(KeyEvent.KEY_PRESSED, keyEventHandler);
+        
         pieces = new Rectangle[]{piece1, piece2, piece3, piece4,piece5,piece6,piece7,piece8,piece9,piece10};
       
         // Store initial positions for pieces
         for (Rectangle piece : pieces) {
         	initialPositions.put(piece, new Integer[]{GridPane.getRowIndex(piece), GridPane.getColumnIndex(piece)});
+        	Integer[] initialPosition = initialPositions.get(piece);
+            currentPositions.put(piece, initialPosition.clone());
         }
         
         // Attach event handlers to the pieces
@@ -94,6 +98,7 @@ public class Controller implements Initializable {
     private void pieceClicked(MouseEvent event) {
     	if (selectedPiece != null) {
             selectedPiece.setStroke(Color.BLACK); // Reset the stroke color of previously selected piece
+            
         }
 
         selectedPiece = (Rectangle) event.getSource();
@@ -102,17 +107,24 @@ public class Controller implements Initializable {
     }
     
     private final EventHandler<KeyEvent> keyEventHandler = event -> {
-        result = Engine.movePiece(event, selectedPiece, board, initialPositions, legal, moveHistory, moves, moveLog);
+        result = Engine.movePiece(event, selectedPiece, board, initialPositions, legal, moveHistory, moves);
         legal = result.isLegal();
-        moveLog = result.getMoveLog();
+
 
         if (legal) {
             moves++;
             MoveCounter.setText("Moves: " + moves);
+            
+            //store the position of every piece
+            for (Rectangle piece : pieces) {
+                int pieceRow = GridPane.getRowIndex(piece);
+                int pieceColumn = GridPane.getColumnIndex(piece);
+                currentPositions.put(piece, new Integer[]{pieceRow, pieceColumn});
+            }
         }
 
         if (selectedPiece.getWidth() == 200 && selectedPiece.getHeight() == 200) {
-            Checks.isWin(board, selectedPiece);
+            Support.isWin(board, selectedPiece);
         }
     };
     
@@ -124,7 +136,7 @@ public class Controller implements Initializable {
 	
 	public void undo(ActionEvent e) {
 		if(moves>0) {
-			Engine.undo(moveHistory, moveLog);
+			Engine.undo(moveHistory);
 			moves--;
 			MoveCounter.setText("Moves: " + moves);
 		}
@@ -137,10 +149,13 @@ public class Controller implements Initializable {
 	}
 	
 	public void save(ActionEvent e) {
-		Engine.save(moveLog);
+		Engine.save(board, currentPositions, moves);
+		System.out.println("SAVE");
 	}
 	
 	public void load(ActionEvent e) {
+		moves=Engine.load(saveFile, board, currentPositions);
+		MoveCounter.setText("Moves: "+moves);
 		System.out.println("LOAD");
 	}
 	
@@ -150,6 +165,8 @@ public class Controller implements Initializable {
 	}
 	
 	public void Config1(ActionEvent e) {
+		Engine.loadConfiguration(configFile, board, initialPositions);
+		//Engine.clearBoard(board);
 		System.out.println("CONFIG1");
 	}
 	
