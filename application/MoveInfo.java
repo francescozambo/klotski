@@ -1,10 +1,9 @@
 package application;
 
 import javafx.scene.shape.Rectangle;
-/*
-	Class used to support the storing position history of every piece
-	Used in method movePiece of Engine class
-
+/**
+ * Class used to support the storing position history of every piece
+ * Used in method movePiece of Engine class
 */
 public class MoveInfo {
     Rectangle piece;
