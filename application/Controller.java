@@ -247,18 +247,27 @@ public class Controller implements Initializable {
 	public void Config1(ActionEvent e) {
 		moves=0;
 		MoveCounter.setText("Moves: "+moves);
-		Engine.loadConfiguration("config.json", board, initialPositions);
+		Engine.loadConfiguration("config1.json", board, initialPositions);
 	}
 	
 	public void Config2(ActionEvent e) {
+		moves=0;
+		MoveCounter.setText("Moves: "+moves);
+		Engine.loadConfiguration("config2.json", board, initialPositions);
 		System.out.println("CONFIG2");
 	}
 	
 	public void Config3(ActionEvent e) {
 		System.out.println("CONFIG3");
+		moves=0;
+		MoveCounter.setText("Moves: "+moves);
+		Engine.loadConfiguration("config3.json", board, initialPositions);
 	}
 	
 	public void Config4(ActionEvent e) {
+		moves=0;
+		MoveCounter.setText("Moves: "+moves);
+		Engine.loadConfiguration("config4.json", board, initialPositions);
 		System.out.println("CONFIG4");
 	}
 
