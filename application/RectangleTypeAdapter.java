@@ -50,11 +50,4 @@ public class RectangleTypeAdapter extends TypeAdapter<Rectangle> {
         return new Rectangle(x, y, width, height);
     }
 
-    /*private Rectangle createPiece(double x, double y, double width, double height) {
-        Rectangle piece = new Rectangle(width, height);
-        piece.setX(x);
-        piece.setY(y);
-        return piece;
-    }
-    */
 }

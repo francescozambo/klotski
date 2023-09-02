@@ -12,6 +12,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.Gson;
 
 import javafx.scene.Node;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
@@ -35,7 +37,18 @@ public class Engine {
         return legal;
     }
 
-	
+	/**
+	 * Method to move the piece
+	 * @param event the key w a s d in order to move the piece 
+	 * @param selectedPiece the piece that has to be moved
+	 * @param board
+	 * @param initialPositions 
+	 * @param legal
+	 * @param moveHistory
+	 * @param moves
+	 * @return return an Engine object which is used to validate the move
+	 */
+    
     public static Engine movePiece(KeyEvent event, Rectangle selectedPiece, GridPane board, Map<Rectangle, Integer[]> initialPositions, boolean legal, Stack<MoveInfo> moveHistory, int moves) {
     	KeyCode keyCode = event.getCode();
     	if (selectedPiece == null) {
@@ -60,30 +73,30 @@ public class Engine {
             default:
                 return new Engine(false); // Return a default value for unknown key events
         }
+        
+        // save the old column and row index for the move history
 	    int oldRowIndex = GridPane.getRowIndex(selectedPiece);
 	    int oldColumnIndex = GridPane.getColumnIndex(selectedPiece);
+	    
 	    // Calculate new position
 	    int rowIndex = GridPane.getRowIndex(selectedPiece);
 	    int columnIndex = GridPane.getColumnIndex(selectedPiece);
 	    int newRow = rowIndex + rowChange;
 	    int newColumn = columnIndex + columnChange;
 	    
-	    // Check if new position is within grid limits
 	    boolean newPositionLegal = false;
 	    
-	   int type=4;
-	   if((selectedPiece.getWidth()==200) && (selectedPiece.getHeight()==100)) {
-		   type=1;
-	   }else if((selectedPiece.getWidth()==100) && (selectedPiece.getHeight()==200)) {
-		   type=2;
-
-	   }else if ((selectedPiece.getWidth()==200) && (selectedPiece.getHeight()==200)) {
-		   type=3;
-
-	   }else {
-		   type=4;
-
-	   }
+	    // set the type of the selected piece in order to be able to control its movement conditions
+	    int type=4;
+	    if((selectedPiece.getWidth()==200) && (selectedPiece.getHeight()==100)) {
+		    type=1;
+	    }else if((selectedPiece.getWidth()==100) && (selectedPiece.getHeight()==200)) {
+		    type=2;
+	    }else if ((selectedPiece.getWidth()==200) && (selectedPiece.getHeight()==200)) {
+		    type=3;
+	    }else {
+		    type=4;
+	    }
 	   
 	    // Check if the new position is within grid limits for the selected piece
 	    if (Support.isMoveWithinBounds(newRow, newColumn, type)) {
@@ -113,6 +126,11 @@ public class Engine {
 	    return new Engine(false); // Return a default value if the move is not legal
 	}
     
+    /**
+     * Method to reset the board
+     * @param initialPositions
+     */
+    
     public static void reset (Map<Rectangle, Integer[]> initialPositions) {
 		for (Map.Entry<Rectangle, Integer[]> entry : initialPositions.entrySet()) {
 	        Rectangle rectangle = entry.getKey();
@@ -122,6 +140,11 @@ public class Engine {
 
 	    }
 	}
+    
+    /**
+     * Method to roll back the last move done
+     * @param moveHistory
+     */
     
 	public static void undo(Stack<MoveInfo> moveHistory) {
 	    if (!moveHistory.isEmpty()) {
@@ -135,23 +158,29 @@ public class Engine {
 	    }
 	}
     
+	/**
+	 * Method to save the board state in a json file called "board_state.json"
+	 * @param board
+	 * @param initialPositions
+	 * @param numberOfMoves 
+	 */
+	
 	public static void save(GridPane board, Map<Rectangle, Integer[]> initialPositions, int numberOfMoves) {
 	    try {
-	        JsonObject jsonObject = new JsonObject();
-	        jsonObject.addProperty("numberOfMoves", numberOfMoves);
-
+	    	// construction of the save file 
+	        JsonObject saveFile = new JsonObject();
+	        saveFile.addProperty("numberOfMoves", numberOfMoves);
 	        JsonObject initialPositionsObject = new JsonObject();
 	        for (Map.Entry<Rectangle, Integer[]> entry : initialPositions.entrySet()) {
 	            Rectangle piece = entry.getKey();
 	            Integer[] position = entry.getValue();
-
 	            JsonObject pieceInfo = new JsonObject();
 	            pieceInfo.addProperty("y", position[0]);
 	            pieceInfo.addProperty("x", position[1]);
 	            initialPositionsObject.add(piece.getId(), pieceInfo);
 	        }
 
-	        jsonObject.add("initialPositions", initialPositionsObject);
+	        saveFile.add("initialPositions", initialPositionsObject);
 
 	        Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
@@ -159,8 +188,15 @@ public class Engine {
 	        String fileName = "board_state.json";
 
 	        FileWriter writer = new FileWriter(fileName);
-	        gson.toJson(jsonObject, writer);
+	        gson.toJson(saveFile, writer);
 	        writer.close();
+	        
+	        // Alert to signal to the player that the game has been saved
+			Alert saved=new Alert(AlertType.INFORMATION);
+			saved.setTitle("Saving");
+			saved.setHeaderText("Saving");
+			saved.setContentText("Game saved in file board_state.json");
+			saved.showAndWait();
 	    } catch (IOException e) {
 	        e.printStackTrace();
 	    }
@@ -211,14 +247,20 @@ public class Engine {
 	                initialPositions.put(piece, new Integer[]{newRow, newColumn});
 	            }
 	        }
+			Alert loaded=new Alert(AlertType.INFORMATION);
+			loaded.setTitle("Loading");
+			loaded.setHeaderText("Loading");
+			loaded.setContentText("Game loaded from saved file");
+			loaded.showAndWait();
 	    } catch (IOException e) {
-	        e.printStackTrace();
+	    	Alert err=new Alert(AlertType.INFORMATION);
+	    	err.setTitle("Error");
+	    	err.setHeaderText("Error");
+			err.setContentText("No saved data found");
+			err.showAndWait();
 	    }
 		return numberOfMoves;
 	}
-
-
-	
 	
 	public static void loadConfiguration(String jsonFilePath, GridPane board, Map<Rectangle, Integer[]> initialPositions) {
 	    try {
@@ -258,9 +300,20 @@ public class Engine {
 	                
 	                // Update the initialPositions map
 	                initialPositions.put(piece, new Integer[]{newRow, newColumn});
+
 	            }
 	        }
+    		Alert config=new Alert(AlertType.INFORMATION);
+    		config.setTitle("Configuration 1");
+    		config.setHeaderText("Configuration loaded");
+    		config.setContentText("Configuration loaded from file, good game");
+    		config.showAndWait();
 	    } catch (IOException e) {
+	    	Alert err=new Alert(AlertType.INFORMATION);
+	    	err.setTitle("Error");
+	    	err.setHeaderText("Error");
+			err.setContentText("No configuration data found");
+			err.showAndWait();
 	        e.printStackTrace();
 	    }
 	}

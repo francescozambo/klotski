@@ -6,9 +6,8 @@ import javafx.scene.Node;
 import javafx.scene.layout.GridPane;
 import javafx.scene.shape.Rectangle;
 
-/*
-	Class of support used to control overlap/out of bound illegal movements and get pieces from the save file
-	
+/**
+ * Class of support used to control overlap/out of bound illegal movements and get pieces from the save file
 */
 
 public class Support {
