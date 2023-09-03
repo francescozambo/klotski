@@ -185,7 +185,7 @@ public class Engine {
 	        Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
 	        // Define the file name and extension
-	        String directoryPath="Save-Config\\";
+	        String directoryPath="src\\Save-Config\\";
 	        String fileName = directoryPath+"board_state.json";
 
 	        FileWriter writer = new FileWriter(fileName);

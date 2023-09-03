@@ -230,7 +230,7 @@ public class Controller implements Initializable {
 	 */
 	
 	public void load(ActionEvent e) {
-		moves=Engine.load("Save-Config\\board_state.json", board, currentPositions);
+		moves=Engine.load("src\\Save-Config\\board_state.json", board, currentPositions);
 		MoveCounter.setText("Moves: "+moves);
 	}
 	
@@ -256,27 +256,25 @@ public class Controller implements Initializable {
 	public void Config1(ActionEvent e) {
 		moves=0;
 		MoveCounter.setText("Moves: "+moves);
-		Engine.loadConfiguration("Save-Config\\config1.json", board, initialPositions);
+		Engine.loadConfiguration("src\\Save-Config\\config1.json", board, initialPositions);
 	}
 	
 	public void Config2(ActionEvent e) {
 		moves=0;
 		MoveCounter.setText("Moves: "+moves);
-		Engine.loadConfiguration("Save-Config\\config2.json", board, initialPositions);
-		System.out.println("CONFIG2");
+		Engine.loadConfiguration("src\\Save-Config\\config2.json", board, initialPositions);
 	}
 	
 	public void Config3(ActionEvent e) {
-		System.out.println("CONFIG3");
 		moves=0;
 		MoveCounter.setText("Moves: "+moves);
-		Engine.loadConfiguration("Save-Config\\config3.json", board, initialPositions);
+		Engine.loadConfiguration("src\\Save-Config\\config3.json", board, initialPositions);
 	}
 	
 	public void Default(ActionEvent e) {
 		moves=0;
 		MoveCounter.setText("Moves: "+moves);
-		Engine.loadConfiguration("Save-Config\\defConfig.json", board, initialPositions);
+		Engine.loadConfiguration("src\\Save-Config\\defConfig.json", board, initialPositions);
 	}
 
 }
